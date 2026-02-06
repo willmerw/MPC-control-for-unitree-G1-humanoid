@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class ModelPredictiveController:
 
@@ -24,7 +25,25 @@ class ModelPredictiveController:
 
 
 
-def model(u):
+def model(u, x):
 
-    return u
+    x_n = x + u
+
+    y = x_n
+
+    return y, x_n
+
+
+def main():
+
+    T = []
+
+    x = np.zeros(3)
+    u = 1
+    while True:
+
+        y, x = model(u,x)
+        print(y)
+
+main()
 
