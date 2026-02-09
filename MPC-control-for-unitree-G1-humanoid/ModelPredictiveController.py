@@ -1,22 +1,23 @@
 import numpy as np
 from scipy.optimize import minimize
-
+import math
 
 
 class ModelPredictiveController:
 
-    def __init__(self,n_states,n_inputs, pred_h, cont_h, Q, R, R_d, T, sampling_time):
+    def __init__(self,n_states,n_inputs, pred_h, cont_h, Q, R, R_d, T,O, sampling_time):
         self.pred_h = pred_h
         self.cont_h = cont_h
         self.Q = np.eye(n_states) *Q #state error cost
         self.R = np.eye(n_inputs) * R #control cost
         self.R_d = np.eye(n_inputs)* R_d #smooth control cost
         self.T = np.eye(n_states) * T # terminal state cost
+        self.O = O # obstacle avoidance
         self.sampling_time = sampling_time
         self.n_states = n_states
         self.n_inputs = n_inputs
 
-    def cost(self,u, x, x_r):
+    def cost(self,u, x, x_r,const_f=None):
 
         c = 0
 
@@ -33,6 +34,12 @@ class ModelPredictiveController:
             x_r_k = x_r[i]
 
             x_k = model(u_k,x_k)
+
+            #obstacle cost
+
+            c += self.obstacle_cost(x_k) * self.O
+
+
 
             #smoothness cost
             du = u_k-u_k_prev
@@ -52,16 +59,37 @@ class ModelPredictiveController:
 
             c += cont_cost
 
-            #terminal state cost
-            e_T = x_k - x_r[-1]
-            terminal_cost = e_T @ self.T @ e_T
-            c += terminal_cost
+
+        #terminal state cost
+        e_T = x_k - x_r[-1]
+        terminal_cost = e_T @ self.T @ e_T
+        c += terminal_cost
 
 
         return c
 
-    def calc_constraints(self,map):
-        pass
+    def calc_constraints(self,f,args):
+        constraints = {
+            "type": "ineq",
+            "fun": f,
+            "args": args
+        }
+        return constraints
+
+    def obstacle_cost(self,x_n):
+        c_obs = np.array([5.0, 4.0])
+        r = 2.0
+
+        dx = x_n[0] - c_obs[0]
+        dy = x_n[1] - c_obs[1]
+
+        g = dx*dx + dy*dy - (r)**2
+
+        # g < 0 → inside forbidden region
+        return max(0.0, -g)**2
+
+
+
 
     def next_u(self,x, x_r, map, u_bounds):
 
