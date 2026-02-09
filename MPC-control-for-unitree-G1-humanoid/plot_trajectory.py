@@ -13,8 +13,8 @@ def gen_trajectory(length):
 
     for i in range(length):
 
-        x = math.sin(i)
-        y = i
+        x = math.sin(i*0.5)
+        y = i *0.5
         traj_x.append(x)
         traj_y.append(y)
 
@@ -24,22 +24,30 @@ def gen_trajectory(length):
 
 def main():
 
-    T = []
+    n_inputs = 2
+    n_states = 2
 
-    x = np.zeros(2)
+    x = np.zeros(n_states)
+    u = np.zeros(n_inputs)
 
-    Q = 1
-    R = 2
+    Q = 10 # state cost
+    R = 3 # control cost
+    R_d = 10 # smoothness cost
+    T = 0.3 # terminal state cost
     pred_h = 10
     cont_h = 10
 
-    traj_x,traj_y,traj = gen_trajectory(50)
+    traj_x,traj_y,traj = gen_trajectory(500)
 
-    mpc = ModelPredictiveController(len(x),pred_h,cont_h,Q,R,0,0,0)
 
-    u = np.zeros(2)
 
-    u_bounds = (-0.1,0.1)
+    mpc = ModelPredictiveController(n_states,n_inputs,pred_h,cont_h,Q,R,R_d,T,0)
+
+
+
+    u_bounds = (-1,1)
+
+    T = [] #time
 
     X = [] #model x values
 
@@ -48,20 +56,24 @@ def main():
     R = [] # reference
 
     i = 0
-    sim_len = 100
+    sim_len = 20
 
     while True:
 
-        u = mpc.next_u(u,x,traj,None,u_bounds)
+        x_r = traj[i:i+pred_h]
 
-        x = model(u,x)
-
+        u = mpc.next_u(x,x_r,None,u_bounds)
 
         X.append(x[0])
 
         Y.append(x[1])
 
-        #R.append(goal_point[0])
+        x = model(u,x)
+
+
+
+
+        #R.append(traj[i][0])
 
         T.append(i)
         i+=1
@@ -70,11 +82,12 @@ def main():
         if i > sim_len:
             break
 
-    plt.axis([-2,2,0,4])
-
+    plt.axis([-2,2,0,20])
     plt.scatter(traj_x,traj_y, label="Trajectory")
     plt.plot(X,Y,label="MPC")
     plt.legend()
+    plt.xlabel("X")
+    plt.ylabel("Y")
     plt.savefig("plot.png")
 
 main()
