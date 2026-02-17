@@ -17,7 +17,6 @@ cont_h = 10
 traj_x,traj_y,traj = gen_trajectory(500)
 
 
-
 mpc = MPC(n_states,n_inputs,pred_h,cont_h,Q,R,R_d,T,0)
 
 x = np.zeros((2,1))

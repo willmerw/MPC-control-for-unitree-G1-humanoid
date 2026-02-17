@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 
 def first_order_delay_model(u,uf_prev,x,tau,tau_u,T,k):
 
+    tau_x = 0.1 # time constant x
+    tau_u_x = 0.7 # input time constant x
+    k_x = 0.85 #DC gain x
+
+    tau_y = 0.1 # time constant x
+    tau_u_y = 0.7 # input time constant x
+    k_y = 0.85 #DC gain x
+
+    tau_z = 0.1 # time constant x
+    tau_u_z = 0.7 # input time constant x
+    k_z = 0.85 #DC gain x
 
     A = np.array([
     [0.0, 1.0],

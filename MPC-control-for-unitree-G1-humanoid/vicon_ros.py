@@ -26,10 +26,9 @@ g2_accels = np.load("g1data/g2_accels.npy")
 g2_twist = np.load("g1data/g2_twist.npy")
 
 
-
-
+print(cmd_vels)
 cmd_x_range = range(0,7)
-cmd_vel_times = cmd_vels[cmd_x_range,0]
+cmd_vel_times_x = cmd_vels[cmd_x_range,0]
 cmd_vel_x = cmd_vels[cmd_x_range,1]
 
 
@@ -37,22 +36,52 @@ x_range = range(900,2500)
 g2_twist_times_x = g2_twist[x_range,0]
 g2_twist_x = g2_twist[x_range,1]
 
+cmd_y_range = range(7,14)
+cmd_vel_times_y = cmd_vels[cmd_y_range,0]
+cmd_vel_y = cmd_vels[cmd_y_range,2]
+
+
+y_range = range(0,len(g2_twist))
+g2_twist_times_y = g2_twist[y_range,0]
+g2_twist_y = g2_twist[y_range,2
+                      ]
+
 
 m = 100
 g2_twist_x_m = g2_twist_x.copy()
 
 # data filtering
 
-for i in range(len(g2_twist_x_m)):
-    if g2_twist_x_m[i] > 1.2:
-        g2_twist_x_m[i] = 1
-    elif g2_twist_x_m[i] < 0 and i > 1:
-        g2_twist_x_m[i] = g2_twist_x_m[i-1]
+def moving_mean_filter(data,m,upper):
+    for i in range(len(data)):
+        if data[i] > upper*1.2:
+            data[i] = upper
+        elif data[i] < 0 and i > 1:
+            data[i] = data[i-1]
 
-for i in range(m,len(g2_twist_x)-m):
-    g2_twist_x_m[i] = min(1,np.mean(g2_twist_x_m[i-m:i+m]))
+    for i in range(m,len(data)-m):
+        data[i] = min(1,np.mean(data[i-m:i+m]))
+
+    return data
+
+#Prepare data for model input
+def fix_cmd(time_data,cmd_times,cmds,T,U,time):
+    for i in np.arange(time_data[0],time_data[-1],T):
+        if i > cmd_times[0] :
+            U.append(cmds[0])
+        else:
+            U.append(0)
+        time.append(i)
+
+    return U, time
+
+g2_twist_x_m = moving_mean_filter(g2_twist_x_m,m,1)
 
 
+tau = 0.1 # time constant
+tau_u = 0.7
+T= 0.01 # sampling time
+k = 0.85 #DC gain
 
 x = np.zeros((2,1))
 u_f = 0
@@ -60,17 +89,11 @@ time = []
 X = []
 U = []
 
-tau = 0.1 # time constant
-tau_u = 0.7
-T= 0.01 # sampling time
-k = 0.85 #DC gain
+U, time = fix_cmd(g2_twist_times_y,cmd_vel_times_y,cmd_vel_y,T,U,time)
 
-for i in np.arange(g2_twist_times_x[0],g2_twist_times_x[-1],T):
-    if i > cmd_vel_times[0] :
-        U.append(cmd_vel_x[0])
-    else:
-        U.append(0)
-    time.append(i)
+
+
+
 
 
 for i in range(len(time)):
@@ -80,16 +103,20 @@ for i in range(len(time)):
 
 plt.figure()
 plt.clf()
-plt.axis([time[0],time[-1],0,1])
-plt.plot(time,X,label="Model response")
-#plt.plot(g2_twist_times_x,g2_twist_x)
+plt.axis([time[0],time[-1],-1,1])
+
+#X plotting
+#plt.plot(time,X,label="Model response")
+#plt.plot(g2_twist_times_x[:-m],g2_twist_x_m[:-m],label="Filtered G1 X velocity, m = 100")
+#plt.plot(cmd_vel_times,cmd_vel_x,label="Cmd X velocity")
 #plt.plot(g2_twist_times_x,g2_twist_x,label="G1 X velocity")
-plt.plot(g2_twist_times_x[:-m],g2_twist_x_m[:-m],label="Filtered G1 X velocity, m = 100")
-#plt.scatter(g2_twist_times,g2_twist_z)
-plt.plot(cmd_vel_times,cmd_vel_x,label="Cmd X velocity")
-#plt.scatter(g2_accel_times,g2_accel_x)
-#plt.plot(unit1_accels_times,unit1_accels_x)
-#plt.plot(unit3_accels_times,unit3_accels_x)
+
+#Y plotting
+#plt.plot(time,Y,label="Model response")
+#plt.plot(g2_twist_times_y[:-m],g2_twist_y_m[:-m],label="Filtered G1 X velocity, m = 100")
+plt.plot(cmd_vel_times_y,cmd_vel_y,label="Cmd Y velocity")
+plt.plot(g2_twist_times_y,g2_twist_y,label="G1 Y velocity")
+
 
 plt.legend()
 

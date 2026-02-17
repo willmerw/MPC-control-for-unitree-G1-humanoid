@@ -5,7 +5,8 @@ import math
 
 class ModelPredictiveController:
 
-    def __init__(self,n_states,n_inputs, pred_h, cont_h, Q, R, R_d, T,O, sampling_time):
+    def __init__(self,model,n_states,n_inputs, pred_h, cont_h, Q, R, R_d, T,O, sampling_time):
+        self.model = model
         self.pred_h = pred_h
         self.cont_h = cont_h
         self.Q = np.eye(n_states) *Q #state error cost
@@ -33,7 +34,7 @@ class ModelPredictiveController:
 
             x_r_k = x_r[i]
 
-            x_k = model(u_k,x_k)
+            x_k = self.model(u_k,x_k)
 
             #obstacle cost
 
@@ -85,8 +86,7 @@ class ModelPredictiveController:
 
         g = dx*dx + dy*dy - (r)**2
 
-        # g < 0 → inside forbidden region
-        return max(0.0, -g)**2
+        return max(0.0, g)**2
 
 
 
@@ -109,12 +109,6 @@ class ModelPredictiveController:
 
         return u_n
 
-
-def model(u, x):
-
-    x_n = x + u
-
-    return x_n
 
 
 
