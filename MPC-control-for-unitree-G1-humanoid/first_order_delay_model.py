@@ -2,8 +2,12 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-def first_order_delay_model(u,uf_prev,x,tau,tau_u,T,k):
+def first_order_delay_model(u,uf_prev,x):
 
+    """
+    x = [x x_dot y y_dot].T
+    """
+    T = 0.1
     tau_x = 0.1 # time constant x
     tau_u_x = 0.7 # input time constant x
     k_x = 0.85 #DC gain x
@@ -17,20 +21,40 @@ def first_order_delay_model(u,uf_prev,x,tau,tau_u,T,k):
     k_z = 0.85 #DC gain x
 
     A = np.array([
-    [0.0, 1.0],
-    [0.0, math.exp(-T/tau)],
+    [1.0, T, 0.0, 0.0],
+    [0.0, math.exp(-T/tau_x), 0.0, 0.0],
+    [0.0, 0.0, 1.0, T],
+    [0.0, 0.0, 0.0, math.exp(-T/tau_y) ]
     ])
 
     B = np.array([
-        [0.0],
-        [k-k*math.exp(-T/tau)]
+        [0.0, 0.0],
+        [k_x-k_x*math.exp(-T/tau_x), 0.0],
+         [0.0, 0.0],
+         [0.0, k_y-k_y*math.exp(-T/tau_y)]
     ])
 
-    u_f = math.exp(-T/tau_u) * uf_prev + (1 - math.exp(-T/tau_u)) * u
+    u_delay = np.array([
+        [math.exp(-T/tau_u_x), 0.0],
+        [0.0, math.exp(-T/tau_u_y)],
+    ])
 
-    x_n = A@x + B*u_f
+    C = np.array([
+        [1, 0, 0, 0],
+        [0, 0, 1, 0]
+                  ])
 
-    return x_n, u_f
+    #u_f = u_delay @ uf_prev + (np.eye(len(u)) - u_delay) @ u
+
+    u_f = u
+
+
+    x_n = A@x + B@u_f
+
+    y = C@x
+
+
+    return y, x_n, u_f
 
 """
 x = np.zeros((2,1))

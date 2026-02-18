@@ -18,6 +18,7 @@ class HighLevelController(Node):
         self.x = 0
         self.x_twist = 0
         self.y = 0
+        self.y_twist = 0
         self.z = 0
 
 
@@ -25,16 +26,35 @@ class HighLevelController(Node):
 
     def publish_cmd(self):
         msg = Twist()
-        msg.linear.x = 0.0     # forward velocity (m/s)
-        msg.linear.y = 0.0
-        msg.angular.z = 0.0    # yaw rate (rad/s)
+
+        x_r = [(1,1)] * self.controller.pred_h
+        input_bounds = [-0.1,0.1]
+
+        x = np.array([
+            self.x,
+            self.x_twist,
+            self.y,
+            self.y_twist
+            ])
+
+        u = self.controller.next_u(x,x_r,None,input_bounds)
+        #print(u)
+        x_cmd = u[0]
+        y_cmd = u[1]
+        #z_cmd = u[2]
+
+        msg.linear.x = x_cmd
+        msg.linear.y = y_cmd
         self.publisher_.publish(msg)
+
 
     def odom_callback(self, msg):
         # Extract position
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
         self.z = msg.pose.pose.position.z
+        self.x_twist = msg.twist.twist.linear.x
+        print(self.x,self.y)
 
 
 def main():
@@ -46,18 +66,16 @@ def main():
 
 
     Q = 10 # state cost
-    R = 3 # control cost
-    R_d = 10 # smoothness cost
-    T = 0.3 # terminal state cost
+    R = 0 # control cost
+    R_d = 0 # smoothness cost
+    T = 0 # terminal state cost
     O = 0 # obstacle cost
     pred_h = 10
     cont_h = 10
 
-    tau = 0.01
-    tau_u = 10
     T = 0.1
-    k = 0.8
-    model = None
+
+    model = first_order_delay_model
     mpc = ModelPredictiveController(model,n_states,n_inputs,pred_h,cont_h,Q,R,R_d,T,O,0)
     node = HighLevelController(mpc)
     try:

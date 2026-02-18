@@ -89,7 +89,7 @@ time = []
 X = []
 U = []
 
-U, time = fix_cmd(g2_twist_times_y,cmd_vel_times_y,cmd_vel_y,T,U,time)
+U, time = fix_cmd(g2_twist_times_x,cmd_vel_times_x,cmd_vel_x,T,U,time)
 
 
 
@@ -99,6 +99,7 @@ U, time = fix_cmd(g2_twist_times_y,cmd_vel_times_y,cmd_vel_y,T,U,time)
 for i in range(len(time)):
     u = U[i]
     x,u_f = first_order_delay_model(u,u_f,x,tau,tau_u,T,k)
+    print(u_f)
     X.append(x[1])
 
 plt.figure()
@@ -106,16 +107,16 @@ plt.clf()
 plt.axis([time[0],time[-1],-1,1])
 
 #X plotting
-#plt.plot(time,X,label="Model response")
-#plt.plot(g2_twist_times_x[:-m],g2_twist_x_m[:-m],label="Filtered G1 X velocity, m = 100")
-#plt.plot(cmd_vel_times,cmd_vel_x,label="Cmd X velocity")
-#plt.plot(g2_twist_times_x,g2_twist_x,label="G1 X velocity")
+plt.plot(time,X,label="Model response")
+plt.plot(g2_twist_times_x[:-m],g2_twist_x_m[:-m],label="Filtered G1 X velocity, m = 100")
+plt.plot(cmd_vel_times_x,cmd_vel_x,label="Cmd X velocity")
+plt.plot(g2_twist_times_x,g2_twist_x,label="G1 X velocity")
 
 #Y plotting
 #plt.plot(time,Y,label="Model response")
 #plt.plot(g2_twist_times_y[:-m],g2_twist_y_m[:-m],label="Filtered G1 X velocity, m = 100")
-plt.plot(cmd_vel_times_y,cmd_vel_y,label="Cmd Y velocity")
-plt.plot(g2_twist_times_y,g2_twist_y,label="G1 Y velocity")
+#plt.plot(cmd_vel_times_y,cmd_vel_y,label="Cmd Y velocity")
+#plt.plot(g2_twist_times_y,g2_twist_y,label="G1 Y velocity")
 
 
 plt.legend()

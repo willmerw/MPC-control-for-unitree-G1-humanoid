@@ -22,25 +22,22 @@ class ModelPredictiveController:
 
         c = 0
 
-        x_k = x.copy()
+        x_n = x.copy()
 
         u_k_prev = np.zeros(self.n_inputs)
+        u_prev = np.zeros(self.n_inputs)
 
         for i in range(self.pred_h):
-
-
 
             u_k = u[i*self.n_inputs:(i+1)*self.n_inputs]
 
             x_r_k = x_r[i]
 
-            x_k = self.model(u_k,x_k)
+            x_k,x_n,u_prev = self.model(u_k,u_prev,x_n)
 
             #obstacle cost
 
-            c += self.obstacle_cost(x_k) * self.O
-
-
+            #c += self.obstacle_cost(x_k) * self.O
 
             #smoothness cost
             du = u_k-u_k_prev
@@ -51,6 +48,7 @@ class ModelPredictiveController:
 
             #state error cost
             e = x_k-x_r_k
+            #print(e)
             state_e_cost = e @ self.Q @ e
 
             c += state_e_cost
@@ -65,8 +63,6 @@ class ModelPredictiveController:
         e_T = x_k - x_r[-1]
         terminal_cost = e_T @ self.T @ e_T
         c += terminal_cost
-
-
         return c
 
     def calc_constraints(self,f,args):
@@ -93,11 +89,11 @@ class ModelPredictiveController:
 
     def next_u(self,x, x_r, map, u_bounds):
 
-        u0 = np.zeros(self.pred_h * self.n_states) #initial guess
+        u0 = np.zeros(self.pred_h * self.n_inputs) #initial guess
 
         #state_constraints = calc_constraints(map)
 
-        input_bounds = [u_bounds] * (self.pred_h * self.n_states)
+        input_bounds = [u_bounds] * (self.pred_h * self.n_inputs)
 
         res = minimize(self.cost,
                      u0,
@@ -105,7 +101,7 @@ class ModelPredictiveController:
                      method="SLSQP",
                      bounds = input_bounds)
 
-        u_n = res.x[:self.n_states]
+        u_n = res.x[:self.n_inputs]
 
         return u_n
 
