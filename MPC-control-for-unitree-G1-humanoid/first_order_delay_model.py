@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def first_order_delay_model(u,uf_prev,x):
 
     """
-    x = [x x_dot y y_dot].T
+    x = [x x_dot y y_dot,z,z_dot].T
     """
     T = 0.1
     tau_x = 0.1 # time constant x
@@ -21,27 +21,33 @@ def first_order_delay_model(u,uf_prev,x):
     k_z = 0.85 #DC gain x
 
     A = np.array([
-    [1.0, T, 0.0, 0.0],
-    [0.0, math.exp(-T/tau_x), 0.0, 0.0],
-    [0.0, 0.0, 1.0, T],
-    [0.0, 0.0, 0.0, math.exp(-T/tau_y) ]
+    [1.0, T, 0.0, 0.0, 0.0, 0.0],
+    [0.0, math.exp(-T/tau_x), 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0, T, 0.0, 0.0],
+    [0.0, 0.0, 0.0, math.exp(-T/tau_y), 0.0, 0.0 ],
+    [0.0, 0.0, 0.0, 0.0, 1.0, T],
+    [0.0, 0.0, 0.0, 0.0, 0.0, math.exp(-T/tau_z)]
     ])
 
     B = np.array([
-        [0.0, 0.0],
-        [k_x-k_x*math.exp(-T/tau_x), 0.0],
-         [0.0, 0.0],
-         [0.0, k_y-k_y*math.exp(-T/tau_y)]
+        [0.0, 0.0, 0.0],
+        [k_x-k_x*math.exp(-T/tau_x), 0.0, 0.0],
+         [0.0, 0.0, 0.0],
+         [0.0, k_y-k_y*math.exp(-T/tau_y), 0.0],
+         [0.0, 0.0, 0.0],
+         [0.0, 0.0, k_z-k_z*math.exp(-T/tau_z)]
     ])
 
     u_delay = np.array([
         [math.exp(-T/tau_u_x), 0.0],
         [0.0, math.exp(-T/tau_u_y)],
+        [0.0, math.exp(-T/tau_u_z)]
     ])
 
     C = np.array([
-        [1, 0, 0, 0],
-        [0, 0, 1, 0]
+        [1, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0]
                   ])
 
     #u_f = u_delay @ uf_prev + (np.eye(len(u)) - u_delay) @ u

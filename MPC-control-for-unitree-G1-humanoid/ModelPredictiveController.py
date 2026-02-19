@@ -103,7 +103,7 @@ class ModelPredictiveController:
 
         u_n = res.x[:self.n_inputs]
 
-        return u_n
+        return u_n,res.x
 
 
 
