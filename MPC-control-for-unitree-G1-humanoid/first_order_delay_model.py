@@ -2,11 +2,9 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-def first_order_delay_model(u,uf_prev,x):
+def first_order_delay_model(u,uf_prev,X_k):
 
-    """
-    x = [x x_dot y y_dot,z,z_dot].T
-    """
+
     T = 0.1
     tau_x = 0.1 # time constant x
     tau_u_x = 0.7 # input time constant x
@@ -20,68 +18,77 @@ def first_order_delay_model(u,uf_prev,x):
     tau_u_z = 0.7 # input time constant x
     k_z = 0.85 #DC gain x
 
-    A = np.array([
-    [1.0, T, 0.0, 0.0, 0.0, 0.0],
-    [0.0, math.exp(-T/tau_x), 0.0, 0.0, 0.0, 0.0],
-    [0.0, 0.0, 1.0, T, 0.0, 0.0],
-    [0.0, 0.0, 0.0, math.exp(-T/tau_y), 0.0, 0.0 ],
-    [0.0, 0.0, 0.0, 0.0, 1.0, T],
-    [0.0, 0.0, 0.0, 0.0, 0.0, math.exp(-T/tau_z)]
+    X = X_k.copy()
+
+    x = X[0]
+    v_x = X[1]
+    y = X[2]
+    v_y = X[3]
+    z = X[4]
+    v_z = X[5]
+
+    R = np.array([
+        [np.cos(z), -np.sin(z)],
+        [np.sin(z),  np.cos(z)]
     ])
 
-    B = np.array([
-        [0.0, 0.0, 0.0],
-        [k_x-k_x*math.exp(-T/tau_x), 0.0, 0.0],
-         [0.0, 0.0, 0.0],
-         [0.0, k_y-k_y*math.exp(-T/tau_y), 0.0],
-         [0.0, 0.0, 0.0],
-         [0.0, 0.0, k_z-k_z*math.exp(-T/tau_z)]
-    ])
-
-    u_delay = np.array([
-        [math.exp(-T/tau_u_x), 0.0],
-        [0.0, math.exp(-T/tau_u_y)],
-        [0.0, math.exp(-T/tau_u_z)]
-    ])
-
-    C = np.array([
-        [1, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0]
-                  ])
-
-    #u_f = u_delay @ uf_prev + (np.eye(len(u)) - u_delay) @ u
-
-    u_f = u
+    u_f = u.copy()
+    u_x = u_f[0]*np.cos(z) - u_f[1]*np.sin(z)
+    u_y = u_f[0]*np.sin(z) + u_f[1]*np.cos(z)
 
 
-    x_n = A@x + B@u_f
+    u_x = u_x
+    u_y = u_y
+    u_z = u_f[2]
 
-    y = C@x
+    x_n = x + T*v_x
+    y_n = y + T*v_y
+    z_n = z + T*v_z
+
+    v_x_n = math.exp(-T/tau_x)*v_x + (k_x-k_x*math.exp(-T/tau_x))*u_x
+    v_y_n = math.exp(-T/tau_y)*v_y + (k_y-k_y*math.exp(-T/tau_y))*u_y
+    v_z_n = math.exp(-T/tau_z)*v_z + (k_z-k_z*math.exp(-T/tau_z))*u_z
+
+    #v_x_n = u_x
+    #v_y_n = u_y
+    #v_z_n = u_z
+
+    x_out = np.array([x_n, y_n, z_n])
+
+    X_n = np.array([x_n, v_x_n,y_n, v_y_n, z_n, v_z_n])
+
+    return x_out, X_n,0
+
+if __name__ == "__main__":
+    u = np.array([2,0,1])
+    uf_prev = np.zeros(3)
+
+    X = np.zeros(6)
+    X[4] = np.deg2rad(0) # set yaw to 90 degrees
 
 
-    return y, x_n, u_f
+    #  run it for 10 steps
+    xpos, ypos, yawpos = [], [], []
+    xV, yV, zV = [], [], []
 
-"""
-x = np.zeros((2,1))
-u = 1
-u_f = 0
+    vx_out = []
 
+    for i in range(60):
+        x_out, X_n, _ = first_order_delay_model(u, uf_prev, X)
+        X = X_n
 
-time = []
-X = []
-tau = 0.01
-tau_u = 10
-T = 0.1
-k = 0.8
+        print("============ Step: {} ============".format(i))
+        print("x_out:", np.array2string(x_out, precision=3, suppress_small=True, floatmode='fixed'))
 
 
-for i in range(1000):
-    x,u_f = first_order_delay_model(u,u_f,x,tau,tau_u,T,k)
-    time.append(i)
-    X.append(x[0])
-    print(x)
+        xpos.append(x_out[0])
+        ypos.append(x_out[1])
+        yawpos.append(x_out[2])
 
-plt.plot(time,X)
-plt.savefig("model.png")
-"""
+        xV.append(X_n[1])
+        yV.append(X_n[3])
+        zV.append(X_n[5])
+
+
+
+

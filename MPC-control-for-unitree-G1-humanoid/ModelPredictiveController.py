@@ -5,20 +5,43 @@ import math
 
 class ModelPredictiveController:
 
-    def __init__(self,model,n_states,n_inputs, pred_h, cont_h, Q, R, R_d, T,O, sampling_time):
+    def __init__(self,model):
         self.model = model
-        self.pred_h = pred_h
-        self.cont_h = cont_h
-        self.Q = np.eye(n_states) *Q #state error cost
-        self.R = np.eye(n_inputs) * R #control cost
-        self.R_d = np.eye(n_inputs)* R_d #smooth control cost
-        self.T = np.eye(n_states) * T # terminal state cost
-        self.O = O # obstacle avoidance
-        self.sampling_time = sampling_time
-        self.n_states = n_states
-        self.n_inputs = n_inputs
+        self.pred_h = 20
+        self.cont_h = 20
 
-    def cost(self,u, x, x_r,const_f=None):
+        self.Q = np.diag([1,1]) * 10 #state error cost
+
+        self.Q_yaw = 3
+
+        self.R = np.diag([1,5,1]) * 1  #control cost
+
+        self.R_d = np.diag([1,1,1])* 3 #smooth control cost
+
+        self.T = np.diag([1,1]) * 1 # terminal state cost
+
+        self.O = 2 # obstacle avoidance
+
+        self.sampling_time = 0.1
+
+        self.n_states = 3
+        self.n_inputs = 3
+
+        self.x_v_min = -0.3
+        self.x_v_max = 0.3
+
+        self.y_v_min = -0.01
+        self.y_v_max = 0.01
+
+        self.z_v_min = -0.5
+        self.z_v_max = 0.5
+
+        self.obs_r = 0.5
+        self.obs_r_inf = 1
+
+        self.pts = [[1,1],[2,4.5]]
+
+    def cost(self,u, x, x_r):
 
         c = 0
 
@@ -29,15 +52,21 @@ class ModelPredictiveController:
 
         for i in range(self.pred_h):
 
-            u_k = u[i*self.n_inputs:(i+1)*self.n_inputs]
+            if i < self.cont_h:
+                u_k = u[i*self.n_inputs:(i+1)*self.n_inputs]
+            else:
+                u_k = u[(self.cont_h-1)*self.n_inputs:self.cont_h*self.n_inputs]
 
             x_r_k = x_r[i]
 
-            x_k,x_n,u_prev = self.model(u_k,u_prev,x_n)
+            x_out,x_n,u_prev = self.model(u_k,u_prev,x_n)
+
+            x_y = x_out[:2]
+            yaw_k = x_out[2]
 
             #obstacle cost
 
-            #c += self.obstacle_cost(x_k) * self.O
+            c += self.obstacle_cost(x_out) * self.O
 
             #smoothness cost
             du = u_k-u_k_prev
@@ -46,12 +75,28 @@ class ModelPredictiveController:
 
             u_k_prev = u_k
 
-            #state error cost
-            e = x_k-x_r_k
-            #print(e)
-            state_e_cost = e @ self.Q @ e
+            #position error cost
+            e = x_y-x_r_k
 
-            c += state_e_cost
+            pos_e_cost = e @ self.Q @ e
+
+            c += pos_e_cost
+
+            #yaw error cost
+
+            e = x_r_k-x_y
+            dx = e[0]
+            dy = e[1]
+
+            yaw_r = math.atan2(dy,dx)
+
+            y_e = yaw_r - yaw_k
+
+            y_e = (y_e + np.pi) % (2*np.pi) - np.pi
+
+            yaw_cost = y_e**2 * self.Q_yaw
+
+            #c += yaw_cost
 
             #control input cost
             cont_cost = u_k @ self.R @ u_k
@@ -60,50 +105,62 @@ class ModelPredictiveController:
 
 
         #terminal state cost
-        e_T = x_k - x_r[-1]
+        e_T = x_y - x_r[-1]
         terminal_cost = e_T @ self.T @ e_T
         c += terminal_cost
         return c
 
-    def calc_constraints(self,f,args):
-        constraints = {
-            "type": "ineq",
-            "fun": f,
-            "args": args
-        }
-        return constraints
+    def obstacle_cost(self, x_out):
 
-    def obstacle_cost(self,x_n):
-        c_obs = np.array([5.0, 4.0])
-        r = 2.0
+        c = 0
 
-        dx = x_n[0] - c_obs[0]
-        dy = x_n[1] - c_obs[1]
+        for pt in self.pts:
 
-        g = dx*dx + dy*dy - (r)**2
+            dx = pt[0] - x_out[0]
+            dy = pt[1] - x_out[1]
 
-        return max(0.0, g)**2
+            d = np.sqrt(dx**2 + dy**2)
 
+            if d > self.obs_r_inf:
+                c += 0
+            else:
+                c += (1/((abs(self.obs_r-d)+1e-6)))**2
+        return c
 
+    def next_u(self,x, x_r, u_prev):
 
+        u0 = np.zeros(self.cont_h * self.n_inputs)
 
-    def next_u(self,x, x_r, map, u_bounds):
+        #u0 = u_prev.copy()
 
-        u0 = np.zeros(self.pred_h * self.n_inputs) #initial guess
-
-        #state_constraints = calc_constraints(map)
-
-        input_bounds = [u_bounds] * (self.pred_h * self.n_inputs)
+        input_bounds = [
+            [self.x_v_min, self.x_v_max],
+            [self.y_v_min, self.y_v_max],
+            [self.z_v_min, self.z_v_max]
+            ] * self.cont_h
 
         res = minimize(self.cost,
                      u0,
                      args=(x,x_r),
                      method="SLSQP",
-                     bounds = input_bounds)
+                     bounds = input_bounds
+                     )
 
         u_n = res.x[:self.n_inputs]
 
-        return u_n,res.x
+        u_opt = res.x.reshape(self.cont_h, self.n_inputs)
+
+
+        # --- Forward simulate predicted states ---
+        x_pred = np.zeros((self.cont_h + 1, self.n_states))
+
+
+        x_n = x.copy()
+
+        for k in range(self.cont_h):
+            x_pred[k],x_n,u_prev = self.model(u_opt[k],u_prev,x_n)
+
+        return u_n,x_pred[:len(x_pred)-1],res.x
 
 
 

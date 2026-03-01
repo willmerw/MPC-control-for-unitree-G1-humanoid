@@ -1,38 +1,31 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from ModelPredictiveController import *
+from first_order_delay_model import *
 import random
 import math
 
 
 def main():
 
-    n_inputs = 2
-    n_states = 2
 
     i = 0
     sim_len = 20
 
-    x = np.zeros(n_states)
-    u = np.zeros(n_inputs)
 
-    Q = 10 # state cost
-    R = 0.1 # control cost
-    R_d = 1 # smoothness cost
-    T = 100 # terminal state cost
-    O = 200 # obstacle cost
-    pred_h = 10
-    cont_h = 10
 
     goal = (10,10)
 
-    x_r = [goal]*pred_h
+
 
     obs = np.array([5,4])
 
 
-
-    mpc = ModelPredictiveController(n_states,n_inputs,pred_h,cont_h,Q,R,R_d,T,O,0)
+    model = first_order_delay_model
+    mpc = ModelPredictiveController(model)
+    x = np.zeros(mpc.n_states)
+    u = np.zeros(mpc.n_inputs)
+    x_r = [goal]*mpc.pred_h
 
 
 
@@ -50,7 +43,7 @@ def main():
 
     while True:
 
-        u = mpc.next_u(x,x_r,None,u_bounds)
+        u = mpc.next_u(x,x_r,u_bounds)
 
         X.append(x[0])
 
