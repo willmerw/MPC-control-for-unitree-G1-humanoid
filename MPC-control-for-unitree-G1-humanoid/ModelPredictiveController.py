@@ -8,26 +8,26 @@ class ModelPredictiveController:
     def __init__(self,model):
         self.model = model
         self.pred_h = 20
-        self.cont_h = 20
+        self.cont_h = 15
 
         self.Q = np.diag([1,1]) * 10 #state error cost
 
-        self.Q_yaw = 3
+        self.Q_yaw = 0
 
-        self.R = np.diag([1,5,1]) * 1  #control cost
+        self.R = np.diag([1,5,0]) * 1  #control cost
 
-        self.R_d = np.diag([1,1,1])* 3 #smooth control cost
+        self.R_d = np.diag([1,1,1])* 1 #smooth control cost
 
-        self.T = np.diag([1,1]) * 1 # terminal state cost
+        self.T = np.diag([1,1]) * 0 # terminal state cost
 
-        self.O = 2 # obstacle avoidance
+        self.O = 0.7 # obstacle avoidance
 
         self.sampling_time = 0.1
 
         self.n_states = 3
         self.n_inputs = 3
 
-        self.x_v_min = -0.3
+        self.x_v_min = 0
         self.x_v_max = 0.3
 
         self.y_v_min = -0.01
@@ -39,7 +39,7 @@ class ModelPredictiveController:
         self.obs_r = 0.5
         self.obs_r_inf = 1
 
-        self.pts = [[1,1],[2,4.5]]
+        self.pts = [[0,0]]
 
     def cost(self,u, x, x_r):
 
@@ -66,7 +66,7 @@ class ModelPredictiveController:
 
             #obstacle cost
 
-            c += self.obstacle_cost(x_out) * self.O
+            #c += self.obstacle_cost(x_out) * self.O
 
             #smoothness cost
             du = u_k-u_k_prev
@@ -92,11 +92,10 @@ class ModelPredictiveController:
 
             y_e = yaw_r - yaw_k
 
-            y_e = (y_e + np.pi) % (2*np.pi) - np.pi
-
             yaw_cost = y_e**2 * self.Q_yaw
 
-            #c += yaw_cost
+            c += yaw_cost
+
 
             #control input cost
             cont_cost = u_k @ self.R @ u_k

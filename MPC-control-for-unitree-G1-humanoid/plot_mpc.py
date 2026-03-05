@@ -30,7 +30,7 @@ error2_y = y - setpoint2[1]
 # -----------------------------
 # RMSE tracking logic with sliding window
 # -----------------------------
-window = 10  # number of steps for local RMSE
+window = 2  # number of steps for local RMSE
 rmse_x = np.zeros(T)
 rmse_y = np.zeros(T)
 tracking_second = False
