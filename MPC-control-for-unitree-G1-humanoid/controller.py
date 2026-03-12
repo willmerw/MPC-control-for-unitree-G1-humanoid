@@ -42,7 +42,7 @@ class HighLevelController(Node):
         #self.g1emil_pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/g1Emil1/pose',self.g1emilpose_callback,qos)
         self.human_pose_subscriber_ = self.create_subscription(PoseArray, '/human_pose',self.humanpose_callback,qos_poses)
         self.object_pose_subscriber_ = self.create_subscription(PoseArray, '/object_pose',self.objectpose_callback,qos_poses)
-        self.g1_pose_subscriber_ = self.create_subscription(PoseStamped, '/vicon/g1/g1',self.g1pose_callback,10)
+        #self.g1_pose_subscriber_ = self.create_subscription(PoseStamped, '/vicon/g1/g1',self.g1pose_callback,10)
 
         self.controller = controller
 
