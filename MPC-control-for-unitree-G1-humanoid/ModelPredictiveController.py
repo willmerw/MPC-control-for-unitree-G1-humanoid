@@ -39,7 +39,7 @@ class ModelPredictiveController:
         self.obs_r = 0.5
         self.obs_r_inf = 1
 
-        self.pts = [[0,0]]
+        self.obstacles = [[0,0]]
 
     def cost(self,u, x, x_r):
 
@@ -113,7 +113,7 @@ class ModelPredictiveController:
 
         c = 0
 
-        for pt in self.pts:
+        for pt in self.obstacles:
 
             dx = pt[0] - x_out[0]
             dy = pt[1] - x_out[1]

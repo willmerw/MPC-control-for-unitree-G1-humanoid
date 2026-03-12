@@ -27,11 +27,6 @@ def first_order_delay_model(u,uf_prev,X_k):
     z = X[4]
     v_z = X[5]
 
-    R = np.array([
-        [np.cos(z), -np.sin(z)],
-        [np.sin(z),  np.cos(z)]
-    ])
-
     u_f = u.copy()
     u_x = u_f[0]*np.cos(z) - u_f[1]*np.sin(z)
     u_y = u_f[0]*np.sin(z) + u_f[1]*np.cos(z)
