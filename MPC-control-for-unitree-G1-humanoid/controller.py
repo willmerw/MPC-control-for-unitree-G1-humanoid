@@ -4,6 +4,7 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseArray
+from vicon_receiver.msg import Position
 from nav_msgs.msg import Odometry
 from ModelPredictiveController import *
 from first_order_delay_model import *
@@ -40,9 +41,10 @@ class HighLevelController(Node):
         #self.odom_subscriber_ = self.create_subscription(Odometry, '/odom',self.odom_callback,10)
         #self.g1emil_twist_subscriber_ = self.create_subscription(TwistStamped, '/vrpn_mocap/g1Emil1/twist',self.g1emiltwist_callback,qos)
         #self.g1emil_pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/g1Emil1/pose',self.g1emilpose_callback,qos)
-        self.human_pose_subscriber_ = self.create_subscription(PoseArray, '/human_pose',self.humanpose_callback,qos_poses)
-        self.object_pose_subscriber_ = self.create_subscription(PoseArray, '/object_pose',self.objectpose_callback,qos_poses)
-        #self.g1_pose_subscriber_ = self.create_subscription(PoseStamped, '/vicon/g1/g1',self.g1pose_callback,10)
+        self.human_pose_subscriber_ = self.create_subscription(PoseArray, '/poses',self.humanpose_callback,qos_poses)
+        #self.object_pose_subscriber_ = self.create_subscription(PoseArray, '/object_pose',self.objectpose_callback,qos_poses)
+        self.g1_pose_subscriber_ = self.create_subscription(Position, '/vicon/g2/g2',self.g1pose_callback,qos_poses)
+        self.box_subscriber_ = self.create_subscription(Position, '/vicon/box_mic/box_mic',self.box_callback,qos_poses)
 
         self.controller = controller
 
@@ -58,7 +60,13 @@ class HighLevelController(Node):
 
         self.u0 = np.zeros(controller.cont_h*controller.n_inputs)
 
-        self.goal = [-2,0]
+        self.goal = [0,0]
+
+        self.received_goal = False
+
+        self.received_obstacle = False
+
+
 
     def publish_cmd(self):
         msg = Twist()
@@ -92,8 +100,6 @@ class HighLevelController(Node):
 
             u,mpc_path,u0 = self.controller.next_u(x,x_r,self.u0)
 
-            #self.u0 = u0
-
             mpc_path = mpc_path.reshape(-1,3)
             mpc_path_x = mpc_path[:,0]
             mpc_path_y = mpc_path[:,1]
@@ -114,33 +120,14 @@ class HighLevelController(Node):
 
             print(f"Cmd_vel: x: {x_cmd:4.2f} y: {y_cmd:4.2f} z: {z_cmd:4.2f}")
 
-            #msg.linear.x = x_cmd
-            #msg.linear.y = y_cmd
-            #msg.angular.z = z_cmd
-            msg.linear.x = 0.0
-            msg.linear.y = 0.0
-            msg.angular.z = 0.0
+            msg.linear.x = x_cmd
+            msg.linear.y = y_cmd
+            msg.angular.z = z_cmd
+            #msg.linear.x = 0.0
+            #msg.linear.y = 0.0
+            #msg.angular.z = 0.0
 
         self.cmd_vel_publisher_.publish(msg)
-
-
-    def odom_callback(self, msg):
-        # Extract position
-        self.x = msg.pose.position.x
-        #self.y = msg.pose.position.y
-        #z = msg.pose.pose.orientation.z
-        #x = msg.pose.pose.orientation.x
-        #y = msg.pose.pose.orientation.y
-        #w = msg.pose.pose.orientation.w
-
-
-        #self.z = math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
-
-
-
-        #self.x_twist = msg.twist.twist.linear.x
-        #self.y_twist = msg.twist.twist.linear.y
-        #self.z_twist = msg.twist.twist.angular.z
 
     def g1emilpose_callback(self, msg):
 
@@ -161,46 +148,42 @@ class HighLevelController(Node):
         self.y_twist = msg.twist.linear.y
         self.z_twist = msg.twist.angular.z
 
-    def g1pose_callback(self,msg):
-
-        self.x = msg.pose.position.x
-        self.y = msg.pose.position.y
-        z = msg.pose.orientation.z
-        x = msg.pose.orientation.x
-        y = msg.pose.orientation.y
-        w = msg.pose.orientation.w
-
-        self.z = math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
-
     def humanpose_callback(self,msg):
 
-        x_bf = msg.poses.position.x
-        y_bf = msg.poses.position.y
+        if not self.received_goal:
 
-        x_bf = np.cos(self.z)*x_bf - np.sin(self.z)*y_bf
-        y_bf = np.sin(self.z)*x_bf + np.cos(self.z)*y_bf
 
-        x_wf = x_bf+self.x
-        y_wf = y_bf+self.y
+            x_bf = msg.poses[0].position.x
+            y_bf = msg.poses[0].position.y
 
-        self.goal = [x_wf, y_wf]
+            x_bf = np.cos(self.z)*x_bf - np.sin(self.z)*y_bf
+            y_bf = np.sin(self.z)*x_bf + np.cos(self.z)*y_bf
 
-        print(f"Goal: x: {self.goal[0]:>10.2f} y: {self.goal[1]:>10.2f}")
-        print(f"Position: x: {self.x:>10.2f} y: {self.y:>10.2f}")
-    def humanpose_callback(self,msg):
+            x_wf = x_bf+self.x
+            y_wf = y_bf+self.y
 
-        x_bf = msg.poses.position.x
-        y_bf = msg.poses.position.y
+            self.goal = [x_wf, y_wf]
+            self.received_goal = True
+        else:
+            return
 
-        x_bf = np.cos(self.z)*x_bf - np.sin(self.z)*y_bf
-        y_bf = np.sin(self.z)*x_bf + np.cos(self.z)*y_bf
+    def objectpose_callback(self,msg):
 
-        x_wf = x_bf+self.x
-        y_wf = y_bf+self.y
+        if not self.received_obstacle:
 
-        print(f"Goal: x: {self.goal[0]:>10.2f} y: {self.goal[1]:>10.2f}")
-        print(f"Position: x: {self.x:>10.2f} y: {self.y:>10.2f}")
+            x_bf = msg.poses.position.x
+            y_bf = msg.poses.position.y
 
+            x_bf = np.cos(self.z)*x_bf - np.sin(self.z)*y_bf
+            y_bf = np.sin(self.z)*x_bf + np.cos(self.z)*y_bf
+
+            x_wf = x_bf+self.x
+            y_wf = y_bf+self.y
+
+            self.controller.obstacles = [[x_wf,y_wf]]
+            self.received_obstacle = True
+        else:
+            return
 
 
 
