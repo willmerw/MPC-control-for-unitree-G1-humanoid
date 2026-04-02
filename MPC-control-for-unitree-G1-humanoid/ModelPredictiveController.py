@@ -18,7 +18,7 @@ class ModelPredictiveController:
 
         self.R_d = np.diag([1,1,1])* 1 #smooth control cost
 
-        self.T = np.diag([1,1]) * 0 # terminal state cost
+        self.T = np.diag([1,1]) * 0.1 # terminal state cost
 
         self.O = 0.7 # obstacle avoidance
 
@@ -30,8 +30,8 @@ class ModelPredictiveController:
         self.x_v_min = 0
         self.x_v_max = 0.3
 
-        self.y_v_min = -0.01
-        self.y_v_max = 0.01
+        self.y_v_min = -0.1
+        self.y_v_max = 0.1
 
         self.z_v_min = -0.5
         self.z_v_max = 0.5
@@ -39,7 +39,7 @@ class ModelPredictiveController:
         self.obs_r = 0.5
         self.obs_r_inf = 1
 
-        self.obstacles = [[0,0]]
+        self.obstacles = [[-1.02, -0.26]]
 
     def cost(self,u, x, x_r):
 
@@ -66,7 +66,7 @@ class ModelPredictiveController:
 
             #obstacle cost
 
-            #c += self.obstacle_cost(x_out) * self.O
+            c += self.obstacle_cost(x_out) * self.O
 
             #smoothness cost
             du = u_k-u_k_prev
@@ -149,8 +149,6 @@ class ModelPredictiveController:
 
         u_opt = res.x.reshape(self.cont_h, self.n_inputs)
 
-
-        # --- Forward simulate predicted states ---
         x_pred = np.zeros((self.cont_h + 1, self.n_states))
 
 

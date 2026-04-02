@@ -14,9 +14,9 @@ def first_order_delay_model(u,uf_prev,X_k):
     tau_u_y = 0.7 # input time constant x
     k_y = 0.85 #DC gain x
 
-    tau_z = 0.1 # time constant x
-    tau_u_z = 0.7 # input time constant x
-    k_z = 0.85 #DC gain x
+    tau_z = 0.1 # time constant yaw
+    tau_u_z = 0.7 # input time constant yaw
+    k_z = 0.85 #DC gain yaw
 
     X = X_k.copy()
 
@@ -40,13 +40,10 @@ def first_order_delay_model(u,uf_prev,X_k):
     y_n = y + T*v_y
     z_n = z + T*v_z
 
-    v_x_n = math.exp(-T/tau_x)*v_x + (k_x-k_x*math.exp(-T/tau_x))*u_x
-    v_y_n = math.exp(-T/tau_y)*v_y + (k_y-k_y*math.exp(-T/tau_y))*u_y
-    v_z_n = math.exp(-T/tau_z)*v_z + (k_z-k_z*math.exp(-T/tau_z))*u_z
+    v_x_n = math.exp(-T/tau_x)*v_x + (k_x-k_x*math.exp(-T/tau_u_x))*u_x
+    v_y_n = math.exp(-T/tau_y)*v_y + (k_y-k_y*math.exp(-T/tau_u_y))*u_y
+    v_z_n = math.exp(-T/tau_z)*v_z + (k_z-k_z*math.exp(-T/tau_u_z))*u_z
 
-    #v_x_n = u_x
-    #v_y_n = u_y
-    #v_z_n = u_z
 
     x_out = np.array([x_n, y_n, z_n])
 
