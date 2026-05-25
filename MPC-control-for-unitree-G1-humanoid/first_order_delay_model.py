@@ -2,7 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-def first_order_delay_model(u,uf_prev,X_k):
+def first_order_delay_model(u,X_k):
 
 
     T = 0.1
@@ -49,7 +49,7 @@ def first_order_delay_model(u,uf_prev,X_k):
 
     X_n = np.array([x_n, v_x_n,y_n, v_y_n, z_n, v_z_n])
 
-    return x_out, X_n,0
+    return x_out, X_n
 
 if __name__ == "__main__":
     u = np.array([2,0,1])
