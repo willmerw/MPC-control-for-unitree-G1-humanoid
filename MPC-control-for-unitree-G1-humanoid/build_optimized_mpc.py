@@ -26,6 +26,7 @@ def first_order_delay_model_casadi(u, X_k):
     u_y = u[0] * cs.sin(z) + u[1] * cs.cos(z)
     u_z = u[2]
 
+
     # Kinematic updates
     x_n = x + T * v_x
     y_n = y + T * v_y
@@ -47,8 +48,8 @@ def first_order_delay_model_casadi(u, X_k):
 # 2. MPC PROBLEM CONFIGURATION & SYMBOLIC GRAPH
 # ==============================================================================
 # Problem Dimensions
-pred_h = 200
-cont_h = 200
+pred_h = 100
+cont_h = 100
 n_states = 6
 n_inputs = 3
 n_obstacles = 1 # Number of moving obstacles to track
@@ -70,16 +71,14 @@ cost = 0
 X_n = x_init
 u_k_prev = cs.DM.zeros(n_inputs)
 
-# Hardcoded Environment Parameters
-obstacles = [[-1.02, -0.26]]
 obs_r = 0.5
 obs_r_inf = 1.0
 O_weight = 0.7
 
 # Penalty Matrices (Constructed using CasADi structural matrices)
 Q   = cs.diag([10, 10])     # State error weight
-R   = cs.diag([1, 5, 0])    # Control input cost weight
-R_d = cs.diag([1, 1, 1])    # Input rate-of-change smoothness weight
+R   = cs.diag([1, 50, 0])    # Control input cost weight
+R_d = cs.diag([1, 1, 10])    # Input rate-of-change smoothness weight
 T_m = cs.diag([0.1, 0.1])   # Terminal weight
 
 if "__main__" == __name__:
@@ -121,15 +120,15 @@ if "__main__" == __name__:
             dy = obs_y - x_out[1]
             d = cs.sqrt(dx**2 + dy**2)
 
-            cost += O_weight * cs.fmax(0, 1.0 / (cs.fabs(obs_r - d) + 1e-6))**2
+            cost += O_weight * cs.fmax(0, (1.0 / (cs.fabs(d-obs_r) + 1e-6)) - (1.0 / (cs.fabs(obs_r_inf-obs_r) + 1e-6)) )**2
 
     # Terminal step application
-    e_T = X_n[[0, 2]] - x_ref[(pred_h - 1) * 2 : pred_h * 2] # Extract x and y positions from X_n
-    cost += cs.bilin(T_m, e_T, e_T)
+    #e_T = X_n[[0, 2]] - x_ref[(pred_h - 1) * 2 : pred_h * 2] # Extract x and y positions from X_n
+    #cost += cs.bilin(T_m, e_T, e_T)
 
 
     x_v_min, x_v_max = 0.0, 0.3
-    y_v_min, y_v_max = -0.1, 0.1
+    y_v_min, y_v_max = -0.01, 0.01
     z_v_min, z_v_max = -0.5, 0.5
 
     u_min = [x_v_min, y_v_min, z_v_min] * cont_h
@@ -145,7 +144,8 @@ if "__main__" == __name__:
         .with_tcp_interface_config()
 
     solver_config = og.config.SolverConfiguration() \
-        .with_tolerance(1e-4) \
+        .with_tolerance(1e-6) \
+        .with_initial_tolerance(1e-6)\
         .with_max_outer_iterations(20) \
         .with_max_inner_iterations(50)
 

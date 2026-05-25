@@ -9,10 +9,10 @@ mng = og.tcp.OptimizerTcpManager("mpc_build/optimized_mpc")
 # Start the TCP server
 mng.start()
 print("Starting TCP server...")
-pred_h=200
+pred_h=100
 # Run simulations
 x_state_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Initial state: [x, v_x, y, v_y, z, v_z]
-ref = [3.0] *pred_h*2
+ref = [3.0, 3.0] *pred_h
 obs = [1.5, 1.5] * pred_h
 simulation_steps = 2000
 
@@ -33,7 +33,7 @@ for k in range(simulation_steps):
 
     x_out,x_next= first_order_delay_model(u,x_state_0)
     xs.append(x_out)
-
+    print(x_out)
     state_sequence += x_next
     input_sequence += [u]
     x_nr = np.concatenate((x_next, ref, obs))

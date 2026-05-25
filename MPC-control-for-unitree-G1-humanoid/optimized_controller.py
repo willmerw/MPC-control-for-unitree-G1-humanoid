@@ -46,7 +46,7 @@ class HighLevelController(Node):
         #self.odom_subscriber_ = self.create_subscription(Odometry, '/odom',self.odom_callback,10)
         #self.g1emil_twist_subscriber_ = self.create_subscription(TwistStamped, '/vrpn_mocap/g1/twist',self.g1emiltwist_callback,qos)
         #self.g1emil_pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/g1/pose',self.g1emilpose_callback,qos)
-        self.champ_pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/g1/pose',self.champ_pose_callback,qos)
+        self.champ_pose_subscriber_ = self.create_subscription(Odometry, '/odom',self.champ_pose_callback,qos)
         #self.human_pose_subscriber_ = self.create_subscription(PoseArray, '/human',self.humanpose_callback,qos_poses)
         #self.object_pose_subscriber_ = self.create_subscription(PoseArray, '/obstacle',self.objectpose_callback,qos_poses)
         #self.g1_pose_subscriber_ = self.create_subscription(Position, '/vicon/g2/g2',self.g1pose_callback,qos_poses)
@@ -69,7 +69,7 @@ class HighLevelController(Node):
         self.goal = [3.0, 3.0]
 
         if n_obstacles > 0:
-            self.obstacles = [10,10] * n_obstacles
+            self.obstacles = [1.0,1.0] * n_obstacles
 
         self.received_goal = False
 
@@ -80,21 +80,21 @@ class HighLevelController(Node):
     def publish_cmd(self):
         msg = Twist()
 
+
         goal = self.goal
 
         dy = goal[1] - self.y
         dx = goal[0] - self.x
 
         dz = math.atan2(dy,dx)-self.z
-        dz = dz *0.1
 
 
-        if np.sqrt(dx**2 + dy**2) < 0.5:
+        if np.sqrt(dx**2 + dy**2) < 0.1:
             msg.linear.x = 0.0
             msg.linear.y = 0.0
             msg.angular.z = 0.0
+            print("Goal reached. Stopping robot.")
         else:
-
             x_r = goal * pred_h
 
             obs = self.obstacles * pred_h
@@ -109,15 +109,11 @@ class HighLevelController(Node):
                 ]
 
             x_nr = x + x_r + obs
-
-            print(x)
-
             solver_status = self.mng.call(x_nr, None)
-            print(solver_status)
+
             us = solver_status['solution']
 
             u = us[0:3]
-
             x_cmd = u[0]
             y_cmd = u[1]
             z_cmd = u[2]
@@ -229,12 +225,12 @@ class HighLevelController(Node):
         self.box = [x,y]
 
     def champ_pose_callback(self, msg):
-        self.x = msg.pose.position.x
-        self.y = msg.pose.position.y
-        z = msg.pose.orientation.z
-        x = msg.pose.orientation.x
-        y = msg.pose.orientation.y
-        w = msg.pose.orientation.w
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        z = msg.pose.pose.orientation.z
+        x = msg.pose.pose.orientation.x
+        y = msg.pose.pose.orientation.y
+        w = msg.pose.pose.orientation.w
 
 
         self.z = math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
