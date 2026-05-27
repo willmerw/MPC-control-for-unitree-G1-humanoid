@@ -22,9 +22,8 @@ from build_optimized_mpc import pred_h, n_inputs, n_obstacles
 class HighLevelController(Node):
     def __init__(self,mng):
         super().__init__('high_level_controller')
-        #self.cmd_vel_publisher_ = self.create_publisher(Twist, '/g2_cmd_vel',10)
-        self.cmd_vel_publisher_ = self.create_publisher(Twist, '/cmd_vel',10)
-        self.mpc_path_publisher = self.create_publisher(Path, 'mpc_path',10)
+        self.cmd_vel_publisher_ = self.create_publisher(Twist, '/g2_cmd_vel',10)
+        #self.cmd_vel_publisher_ = self.create_publisher(Twist, '/cmd_vel',10)
 
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -44,9 +43,9 @@ class HighLevelController(Node):
         self.timer2 = self.create_timer(0.1, self.publish_mpc_path)
 
         #self.odom_subscriber_ = self.create_subscription(Odometry, '/odom',self.odom_callback,10)
-        #self.g1emil_twist_subscriber_ = self.create_subscription(TwistStamped, '/vrpn_mocap/g1/twist',self.g1emiltwist_callback,qos)
-        #self.g1emil_pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/g1/pose',self.g1emilpose_callback,qos)
-        self.champ_pose_subscriber_ = self.create_subscription(Odometry, '/odom',self.champ_pose_callback,qos)
+        self.g1emil_twist_subscriber_ = self.create_subscription(TwistStamped, '/vrpn_mocap/g1/twist',self.g1emiltwist_callback,qos)
+        self.g1emil_pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/g1/pose',self.g1emilpose_callback,qos)
+        #self.champ_pose_subscriber_ = self.create_subscription(Odometry, '/odom',self.champ_pose_callback,qos)
         #self.human_pose_subscriber_ = self.create_subscription(PoseArray, '/human',self.humanpose_callback,qos_poses)
         #self.object_pose_subscriber_ = self.create_subscription(PoseArray, '/obstacle',self.objectpose_callback,qos_poses)
         #self.g1_pose_subscriber_ = self.create_subscription(Position, '/vicon/g2/g2',self.g1pose_callback,qos_poses)
@@ -64,12 +63,10 @@ class HighLevelController(Node):
         self.robot_coords = []
         self.mpc_path = []
 
-        self.u0 = [0.0] * n_inputs * pred_h
-
-        self.goal = [3.0, 3.0]
+        self.goal = [0.0, 0.0]
 
         if n_obstacles > 0:
-            self.obstacles = [1.0,1.0] * n_obstacles
+            self.obstacles = [0.0,1.0]
 
         self.received_goal = False
 
@@ -136,33 +133,6 @@ class HighLevelController(Node):
 
         self.cmd_vel_publisher_.publish(msg)
 
-    def publish_mpc_path(self):
-        path_msg = Path()
-        #current_time = self.get_clock().now().to_msg()
-        #path_msg.header.stamp = current_time
-        path_msg.header.frame_id = 'world'
-
-        for coord in self.mpc_path:
-            pose_stamped = PoseStamped()
-
-            # Sync individual pose headers with the parent path header
-            #pose_stamped.header.stamp = current_time
-            pose_stamped.header.frame_id = 'world'
-
-            # Assign spatial coordinates
-            pose_stamped.pose.position.x = coord[0]
-            pose_stamped.pose.position.y = coord[1]
-
-            # Set a neutral orientation (identity quaternion)
-            pose_stamped.pose.orientation.x = 0.0
-            pose_stamped.pose.orientation.y = 0.0
-            pose_stamped.pose.orientation.z = 0.0
-            pose_stamped.pose.orientation.w = 1.0
-
-            # Append to the path array
-            path_msg.poses.append(pose_stamped)
-        self.mpc_path_publisher.publish(path_msg)
-
     def g1emilpose_callback(self, msg):
 
 
@@ -214,7 +184,7 @@ class HighLevelController(Node):
             x_wf = x_bf+self.x
             y_wf = y_bf+self.y
 
-            self.controller.obstacles = [[x_wf,y_wf]]
+            self.obstacles = [x_wf,y_wf]
             self.received_obstacle = True
         else:
             return
@@ -223,17 +193,6 @@ class HighLevelController(Node):
         x = msg.pose.position.x
         y = msg.pose.position.y
         self.box = [x,y]
-
-    def champ_pose_callback(self, msg):
-        self.x = msg.pose.pose.position.x
-        self.y = msg.pose.pose.position.y
-        z = msg.pose.pose.orientation.z
-        x = msg.pose.pose.orientation.x
-        y = msg.pose.pose.orientation.y
-        w = msg.pose.pose.orientation.w
-
-
-        self.z = math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
 
 
 

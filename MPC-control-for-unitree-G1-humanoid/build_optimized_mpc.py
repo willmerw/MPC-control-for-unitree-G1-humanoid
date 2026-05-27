@@ -7,11 +7,10 @@ import opengen as og
 # ==============================================================================
 def first_order_delay_model_casadi(u, X_k):
     T = 0.1
-
     # Model parameters
-    tau_x, tau_u_x, k_x = 0.1, 0.7, 0.85
-    tau_y, tau_u_y, k_y = 0.1, 0.7, 0.85
-    tau_z, tau_u_z, k_z = 0.1, 0.7, 0.85
+    tau_x, tau_u_x, k_x = 1.0, 1.9, 0.55
+    tau_y, tau_u_y, k_y = 1.0, 2.2, 0.55
+    tau_z, tau_u_z, k_z = 1.0, 2.2, 0.85
 
     # Unpack symbolic states
     x   = X_k[0]
