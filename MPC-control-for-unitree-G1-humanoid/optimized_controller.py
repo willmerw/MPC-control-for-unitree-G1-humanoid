@@ -41,8 +41,8 @@ class HighLevelController(Node):
         self.twist_subscriber_ = self.create_subscription(TwistStamped, '/vrpn_mocap/UnitreeG1Tito/twist',self.twist_callback,qos)
         self.pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/UnitreeG1Tito/pose',self.pose_callback,qos)
         #self.champ_pose_subscriber_ = self.create_subscription(Odometry, '/odom',self.odom_callback,qos)
-        self.goal_pose_subscriber_ = self.create_subscription(PoseArray, '/human',self.goal_pose_callback,qos_poses)
-        self.obstacle_pose_subscriber_ = self.create_subscription(PoseArray, '/obstacle',self.obstacle_pose_callback,qos_poses)
+        #self.goal_pose_subscriber_ = self.create_subscription(PoseArray, '/human',self.goal_pose_callback,qos_poses)
+        #self.obstacle_pose_subscriber_ = self.create_subscription(PoseArray, '/obstacle',self.obstacle_pose_callback,qos_poses)
         #self.box_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/box_mic/pose',self.box_callback,qos_poses)
 
         self.mng = mng
@@ -60,7 +60,7 @@ class HighLevelController(Node):
         self.goal = [2.0, 0.0]
 
         if n_obstacles > 0:
-            self.obstacles = [0.0,0.0,-2.0,1.0]
+            self.obstacles = [0.0,0.0,-2.0,0.0]
 
         self.received_goal = False
 
@@ -186,6 +186,20 @@ class HighLevelController(Node):
         x = msg.pose.position.x
         y = msg.pose.position.y
         self.box = [x,y]
+
+    def odom_callback(self, msg):
+    # Extract position from geometry_msgs/PoseWithCovariance
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+
+        # Extract orientation quaternion
+        x = msg.pose.pose.orientation.x
+        y = msg.pose.pose.orientation.y
+        z = msg.pose.pose.orientation.z
+        w = msg.pose.pose.orientation.w
+
+        # Convert quaternion to yaw angle (z-axis rotation)
+        self.z = math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
 
 
 

@@ -47,8 +47,8 @@ def first_order_delay_model_casadi(u, X_k):
 # 2. MPC PROBLEM CONFIGURATION & SYMBOLIC GRAPH
 # ==============================================================================
 # Problem Dimensions
-pred_h = 100
-cont_h = 100
+pred_h = 50
+cont_h = 50
 n_states = 6
 n_inputs = 3
 n_obstacles = 2 # Number of obstacles to track
@@ -72,8 +72,8 @@ u_k_prev = cs.DM.zeros(n_inputs)
 
 obs_r = 0.5
 obs_r_inf = 1.0
-O_weight = 1.0
-
+O_weight = 50.0
+decay_rate=1.0
 # Penalty Matrices (Constructed using CasADi structural matrices)
 Q   = cs.diag([10, 10])     # State error weight
 R   = cs.diag([1, 50, 0])    # Control input cost weight
@@ -123,8 +123,15 @@ if "__main__" == __name__:
             dy = obs_y - x_out[1]
             d = cs.sqrt(dx**2 + dy**2)
 
-            cost += O_weight * cs.fmax(0, (1.0 / (cs.fabs(d-obs_r) + 1e-6)) - (1.0 / (cs.fabs(obs_r_inf-obs_r) + 1e-6)) )**2
+            barrier = cs.exp(-decay_rate * (d - obs_r))
 
+            # Smooth conditional window using cs.if_else
+            barrier_windowed = cs.if_else(d <= obs_r_inf, barrier, 0.0)
+
+            cost += O_weight * barrier_windowed
+
+            #cost += O_weight * cs.fmax(0, (1.0 / (cs.fabs(d-obs_r) + 1e-6)) - (1.0 / (cs.fabs(obs_r_inf-obs_r) + 1e-6)) )**2
+            #cost += O_weight * cs.fmax(0, (1.0 / (cs.fabs(d-obs_r) + 1e-6))**2 )
     # Terminal step application
     #e_T = X_n[[0, 2]] - x_ref[(pred_h - 1) * 2 : pred_h * 2] # Extract x and y positions from X_n
     #cost += cs.bilin(T_m, e_T, e_T)

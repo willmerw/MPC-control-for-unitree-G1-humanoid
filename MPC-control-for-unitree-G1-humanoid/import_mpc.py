@@ -9,11 +9,11 @@ mng = og.tcp.OptimizerTcpManager("mpc_build/optimized_mpc")
 # Start the TCP server
 mng.start()
 print("Starting TCP server...")
-pred_h=50
+pred_h=100
 # Run simulations
 x_state_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Initial state: [x, v_x, y, v_y, z, v_z]
-ref = [3.0, 3.0] *pred_h
-obs = [1.5, 1.5] * pred_h
+ref = [5.0, 5.0] *pred_h
+obs = [1.5, 1.5, 3.5, 2.0] * pred_h
 simulation_steps = 2000
 
 state_sequence = x_state_0
@@ -47,9 +47,10 @@ fig, ax = plt.subplots()
 
 # Correct instantiation: define the circle patch
 obstacle_circle = Circle((1.5, 1.5), 1, color='r', alpha=0.5, label='Obstacle')
-
+obstacle_circle2 = Circle((3.5, 2), 1, color='r', alpha=0.5, label='Obstacle')
 # Add the patch to the axis
 ax.add_patch(obstacle_circle)
+ax.add_patch(obstacle_circle2)
 xs = np.array(xs)
 from matplotlib.patches import Circle
 
