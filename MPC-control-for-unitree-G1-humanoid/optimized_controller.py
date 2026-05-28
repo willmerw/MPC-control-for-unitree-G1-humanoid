@@ -60,7 +60,7 @@ class HighLevelController(Node):
         self.goal = [2.0, 0.0]
 
         if n_obstacles > 0:
-            self.obstacles = [0.0,0.0,-2.0,0.0]
+            self.obstacles = [0.0,0.0,-2.0,1.0]
 
         self.received_goal = False
 
@@ -188,7 +188,7 @@ class HighLevelController(Node):
         self.box = [x,y]
 
     def odom_callback(self, msg):
-    # Extract position from geometry_msgs/PoseWithCovariance
+        #For testing with champ's odometry instead of vicon data
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
 

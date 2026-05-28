@@ -72,7 +72,7 @@ u_k_prev = cs.DM.zeros(n_inputs)
 
 obs_r = 0.5
 obs_r_inf = 1.0
-O_weight = 50.0
+O_weight = 100.0
 decay_rate=1.0
 # Penalty Matrices (Constructed using CasADi structural matrices)
 Q   = cs.diag([10, 10])     # State error weight
@@ -132,6 +132,7 @@ if "__main__" == __name__:
 
             #cost += O_weight * cs.fmax(0, (1.0 / (cs.fabs(d-obs_r) + 1e-6)) - (1.0 / (cs.fabs(obs_r_inf-obs_r) + 1e-6)) )**2
             #cost += O_weight * cs.fmax(0, (1.0 / (cs.fabs(d-obs_r) + 1e-6))**2 )
+
     # Terminal step application
     #e_T = X_n[[0, 2]] - x_ref[(pred_h - 1) * 2 : pred_h * 2] # Extract x and y positions from X_n
     #cost += cs.bilin(T_m, e_T, e_T)
