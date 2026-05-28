@@ -22,7 +22,7 @@ from build_optimized_mpc import pred_h, n_inputs, n_obstacles
 class HighLevelController(Node):
     def __init__(self,mng):
         super().__init__('high_level_controller')
-        self.cmd_vel_publisher_ = self.create_publisher(Twist, '/g2_cmd_vel',10)
+        self.cmd_vel_publisher_ = self.create_publisher(Twist, '/g1_cmd_vel',10)
         #self.cmd_vel_publisher_ = self.create_publisher(Twist, '/cmd_vel',10)
 
         qos = QoSProfile(
@@ -40,15 +40,13 @@ class HighLevelController(Node):
         )
 
         self.timer = self.create_timer(0.1, self.publish_cmd)
-        self.timer2 = self.create_timer(0.1, self.publish_mpc_path)
 
         #self.odom_subscriber_ = self.create_subscription(Odometry, '/odom',self.odom_callback,10)
-        self.g1emil_twist_subscriber_ = self.create_subscription(TwistStamped, '/vrpn_mocap/g1/twist',self.g1emiltwist_callback,qos)
-        self.g1emil_pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/g1/pose',self.g1emilpose_callback,qos)
-        #self.champ_pose_subscriber_ = self.create_subscription(Odometry, '/odom',self.champ_pose_callback,qos)
-        #self.human_pose_subscriber_ = self.create_subscription(PoseArray, '/human',self.humanpose_callback,qos_poses)
-        #self.object_pose_subscriber_ = self.create_subscription(PoseArray, '/obstacle',self.objectpose_callback,qos_poses)
-        #self.g1_pose_subscriber_ = self.create_subscription(Position, '/vicon/g2/g2',self.g1pose_callback,qos_poses)
+        self.twist_subscriber_ = self.create_subscription(TwistStamped, '/vrpn_mocap/UnitreeG1Tito/twist',self.twist_callback,qos)
+        self.pose_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/UnitreeG1Tito/pose',self.pose_callback,qos)
+        #self.champ_pose_subscriber_ = self.create_subscription(Odometry, '/odom',self.odom_callback,qos)
+        self.goal_pose_subscriber_ = self.create_subscription(PoseArray, '/human',self.goal_pose_callback,qos_poses)
+        self.obstacle_pose_subscriber_ = self.create_subscription(PoseArray, '/obstacle',self.obstacle_pose_callback,qos_poses)
         #self.box_subscriber_ = self.create_subscription(PoseStamped, '/vrpn_mocap/box_mic/pose',self.box_callback,qos_poses)
 
         self.mng = mng
@@ -63,10 +61,10 @@ class HighLevelController(Node):
         self.robot_coords = []
         self.mpc_path = []
 
-        self.goal = [0.0, 0.0]
+        self.goal = [2.0, 0.0]
 
         if n_obstacles > 0:
-            self.obstacles = [0.0,1.0]
+            self.obstacles = [0.0,0.0,-2.0,1.0]
 
         self.received_goal = False
 
@@ -83,16 +81,15 @@ class HighLevelController(Node):
         dy = goal[1] - self.y
         dx = goal[0] - self.x
 
-        dz = math.atan2(dy,dx)-self.z
 
-
-        if np.sqrt(dx**2 + dy**2) < 0.1:
+        if np.sqrt(dx**2 + dy**2) < 0.3:
             msg.linear.x = 0.0
             msg.linear.y = 0.0
             msg.angular.z = 0.0
             print("Goal reached. Stopping robot.")
         else:
             x_r = goal * pred_h
+
 
             obs = self.obstacles * pred_h
 
@@ -133,7 +130,7 @@ class HighLevelController(Node):
 
         self.cmd_vel_publisher_.publish(msg)
 
-    def g1emilpose_callback(self, msg):
+    def pose_callback(self, msg):
 
 
         self.x = msg.pose.position.x
@@ -146,13 +143,13 @@ class HighLevelController(Node):
 
         self.z = math.atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
 
-    def g1emiltwist_callback(self,msg):
+    def twist_callback(self,msg):
 
         self.x_twist = msg.twist.linear.x
         self.y_twist = msg.twist.linear.y
         self.z_twist = msg.twist.angular.z
 
-    def humanpose_callback(self,msg):
+    def goal_pose_callback(self,msg):
 
         if not self.received_goal:
 
@@ -171,7 +168,7 @@ class HighLevelController(Node):
         else:
             return
 
-    def objectpose_callback(self,msg):
+    def obstacle_pose_callback(self,msg):
 
         if not self.received_obstacle:
 
@@ -193,6 +190,7 @@ class HighLevelController(Node):
         x = msg.pose.position.x
         y = msg.pose.position.y
         self.box = [x,y]
+
 
 
 

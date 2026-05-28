@@ -51,7 +51,7 @@ pred_h = 100
 cont_h = 100
 n_states = 6
 n_inputs = 3
-n_obstacles = 1 # Number of moving obstacles to track
+n_obstacles = 2 # Number of moving obstacles to track
 
 # Define Decision Variables (The control input sequence)
 u_sequence = cs.SX.sym('u_seq', n_inputs * cont_h)
@@ -72,12 +72,12 @@ u_k_prev = cs.DM.zeros(n_inputs)
 
 obs_r = 0.5
 obs_r_inf = 1.0
-O_weight = 0.7
+O_weight = 1.0
 
 # Penalty Matrices (Constructed using CasADi structural matrices)
 Q   = cs.diag([10, 10])     # State error weight
 R   = cs.diag([1, 50, 0])    # Control input cost weight
-R_d = cs.diag([1, 1, 10])    # Input rate-of-change smoothness weight
+R_d = cs.diag([1, 1, 1])    # Input rate-of-change smoothness weight
 T_m = cs.diag([0.1, 0.1])   # Terminal weight
 
 if "__main__" == __name__:
@@ -110,8 +110,12 @@ if "__main__" == __name__:
 
         # Obstacle Proximity Cost (Continuous symbolic barrier function)
         for m in range(n_obstacles):
-            # Calculate the base offset index for obstacle 'm' at lookahead step 'i'
-            base_idx = (m * pred_h * 2) + (i * 2)
+
+
+            base_idx = (m * 2) + (i * 2)*n_obstacles #CURRENTLY ASSUMES STATIC OBSTACLES
+
+            #base_idx = (m * 2 *pred_h) + (i * 2) # Dynamic obstacles indexing (uncomment if using dynamic obstacles) (requires obs_ref to be sized for dynamic obstacles)
+
             obs_x = obs_ref[base_idx + 0]
             obs_y = obs_ref[base_idx + 1]
 
@@ -126,7 +130,7 @@ if "__main__" == __name__:
     #cost += cs.bilin(T_m, e_T, e_T)
 
 
-    x_v_min, x_v_max = 0.0, 0.3
+    x_v_min, x_v_max = 0.0, 0.5
     y_v_min, y_v_max = -0.01, 0.01
     z_v_min, z_v_max = -0.5, 0.5
 

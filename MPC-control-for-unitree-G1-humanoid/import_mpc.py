@@ -9,7 +9,7 @@ mng = og.tcp.OptimizerTcpManager("mpc_build/optimized_mpc")
 # Start the TCP server
 mng.start()
 print("Starting TCP server...")
-pred_h=100
+pred_h=50
 # Run simulations
 x_state_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Initial state: [x, v_x, y, v_y, z, v_z]
 ref = [3.0, 3.0] *pred_h
