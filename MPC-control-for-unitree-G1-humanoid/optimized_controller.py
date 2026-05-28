@@ -5,7 +5,6 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseArray
-#from vicon_receiver.msg import Position
 from nav_msgs.msg import Odometry, Path
 from first_order_delay_model import *
 import numpy as np
@@ -14,9 +13,6 @@ from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy, HistoryPo
 import opengen as og
 
 from build_optimized_mpc import pred_h, n_inputs, n_obstacles
-
-
-
 
 
 class HighLevelController(Node):

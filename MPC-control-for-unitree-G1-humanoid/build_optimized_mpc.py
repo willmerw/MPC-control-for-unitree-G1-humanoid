@@ -51,7 +51,7 @@ pred_h = 100
 cont_h = 100
 n_states = 6
 n_inputs = 3
-n_obstacles = 2 # Number of moving obstacles to track
+n_obstacles = 2 # Number of obstacles to track
 
 # Define Decision Variables (The control input sequence)
 u_sequence = cs.SX.sym('u_seq', n_inputs * cont_h)
