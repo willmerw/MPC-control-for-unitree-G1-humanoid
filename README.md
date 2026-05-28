@@ -27,7 +27,7 @@ The **params** variable defines the input to the solver. See the order and the s
 4. Changing solver parameters
 5. Changing controller input constraints
 
-**Always rebuild the controller after changing a parameter**
+**Always re-run the script after changing a parameter**
 
 **ENCOUNTERED ERROR when starting the script:**
 
